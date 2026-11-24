@@ -8,35 +8,36 @@ import { todayLagos } from "@/lib/format";
 export async function addStock(f: FormData) {
   const { supabase } = await requireMember();
   const kind = str(f, "kind");
+  const productId = str(f, "product_id");
   const crates = num(f, "crates");
   const date = str(f, "moved_on") || todayLagos();
-  if (!["in", "spoilt", "count"].includes(kind)) redirect(back("/stock", "Choose what happened."));
-  if (!Number.isInteger(crates) || (kind !== "count" && crates <= 0) || (kind === "count" && crates < 0)) redirect(back("/stock", "Enter a whole number of crates."));
+  const from = str(f, "from") || "/stock";
+  if (!productId) redirect(back(from, "Choose the egg size."));
+  if (!["opening", "spoilt", "count"].includes(kind)) redirect(back(from, "Choose what happened."));
+  if (!Number.isInteger(crates) || (kind !== "count" && crates <= 0) || (kind === "count" && crates < 0)) redirect(back(from, "Enter a whole number of crates."));
 
   let row: Record<string, unknown>;
   if (kind === "count") {
-    const { data: lvl } = await supabase.from("stock_level").select("crates_in_stock").maybeSingle();
-    const diff = crates - Number(lvl?.crates_in_stock ?? 0);
-    if (diff === 0) redirect(back("/stock", "The count already matches. Nothing to change.", "ok"));
-    row = { kind: "adjust", crates: diff, moved_on: date, notes: str(f, "notes") || `Stock count: ${crates} crates` };
+    const { data: p } = await supabase.from("stock_by_product").select("on_hand").eq("id", productId).maybeSingle();
+    const diff = crates - Number(p?.on_hand ?? 0);
+    if (diff === 0) redirect(back(from, "The count already matches. Nothing to change.", "ok"));
+    row = { product_id: productId, kind: "adjust", crates: diff, moved_on: date, notes: str(f, "notes") || `Counted ${crates} crates` };
   } else {
     const cost = num(f, "unit_cost");
-    row = {
-      kind, crates, moved_on: date, notes: str(f, "notes") || null,
-      unit_cost: kind === "in" && cost >= 0 ? cost : null,
-      supplier: kind === "in" ? str(f, "supplier") || null : null,
-    };
+    if (kind === "opening" && !(cost >= 0)) redirect(back(from, "Enter what she paid per crate for the old stock (an estimate is fine)."));
+    row = { product_id: productId, kind, crates, moved_on: date, notes: str(f, "notes") || null, unit_cost: kind === "opening" ? cost : null };
   }
   const { error } = await supabase.from("stock_movements").insert(row);
-  if (error) redirect(back("/stock", error.message));
+  if (error) redirect(back(from, error.message));
   revalidatePath("/", "layout");
-  redirect(back("/stock", kind === "in" ? "Stock added." : kind === "spoilt" ? "Spoilt crates recorded." : "Stock count corrected.", "ok"));
+  redirect(back(from, kind === "opening" ? "Old stock added." : kind === "spoilt" ? "Spoilt crates recorded." : "Stock count corrected.", "ok"));
 }
 
 export async function deleteMovement(f: FormData) {
   const { supabase } = await requireOwner();
-  const { error } = await supabase.from("stock_movements").delete().eq("id", str(f, "id"));
-  if (error) redirect(back("/stock", error.message));
+  const from = str(f, "from") || "/stock";
+  const { error } = await supabase.from("stock_movements").delete().eq("id", str(f, "id")).is("purchase_id", null);
+  if (error) redirect(back(from, error.message));
   revalidatePath("/", "layout");
-  redirect(back("/stock", "Entry deleted.", "ok"));
+  redirect(back(from, "Entry deleted.", "ok"));
 }

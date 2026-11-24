@@ -6,8 +6,8 @@ export type Member = { user_id: string; full_name: string | null; role: "owner" 
 export type Settings = {
   business_name: string;
   default_crate_price: number;
-  low_stock_level: number;
-  opening_stock: number;
+  aging_days: number;
+  old_days: number;
 };
 
 /** Signed-in user, their team membership and the business settings. Redirects to /login if signed out. */
@@ -17,13 +17,13 @@ export const getSession = cache(async () => {
   if (!user) redirect("/login");
   const [{ data: member }, { data: settings }] = await Promise.all([
     supabase.from("members").select("user_id, full_name, role").eq("user_id", user.id).maybeSingle(),
-    supabase.from("settings").select("business_name, default_crate_price, low_stock_level, opening_stock").eq("id", 1).maybeSingle(),
+    supabase.from("settings").select("business_name, default_crate_price, aging_days, old_days").eq("id", 1).maybeSingle(),
   ]);
   return {
     supabase,
     user,
     member: member as Member | null,
-    settings: (settings ?? { business_name: "Flaky Egg Distributor", default_crate_price: 5400, low_stock_level: 20, opening_stock: 0 }) as Settings,
+    settings: (settings ?? { business_name: "Flaky Egg Distributor", default_crate_price: 5400, aging_days: 10, old_days: 14 }) as Settings,
   };
 });
 

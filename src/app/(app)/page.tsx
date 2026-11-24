@@ -6,6 +6,8 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { requireMember } from "@/lib/auth";
 import { loadFinance, summarize } from "@/lib/finance";
 import { count, naira, shortDate, todayLagos } from "@/lib/format";
+import { ageOf, stockByProduct } from "@/lib/inventory";
+import { AgeBadge } from "@/components/AgeBadge";
 
 function buckets(period: string, today: string) {
   if (period === "all") {
@@ -37,18 +39,21 @@ export default async function Dashboard({ searchParams }: { searchParams: { peri
   const chartStart = monthly ? out[0].key + "-01" : out[0].key;
   const loadFrom = [start, chartStart].filter(Boolean).sort()[0] ?? null;
 
-  const [fin, { data: stock }, { data: debtors }, { data: pending }, { data: recent }] = await Promise.all([
+  const [fin, products, { data: debtors }, { data: pending }, { data: recent }, { data: incomingPu }] = await Promise.all([
     loadFinance(supabase, period === "all" ? null : loadFrom, owner),
-    supabase.from("stock_level").select("crates_in_stock").maybeSingle(),
+    stockByProduct(supabase),
     supabase.from("customer_balances").select("id, name, phone, balance").gt("balance", 0).order("balance", { ascending: false }).limit(6),
     supabase.from("orders").select("crates").eq("status", "pending"),
-    supabase.from("sale_status").select("id, customer_name, sale_date, crates, amount, due").order("created_at", { ascending: false }).limit(5),
+    supabase.from("sale_status").select("id, customer_name, product_name, sale_date, crates, amount, due").order("created_at", { ascending: false }).limit(5),
+    supabase.from("purchases").select("id, expected_on, suppliers(name), purchase_items(crates_ordered)").eq("status", "expected").order("expected_on", { ascending: true, nullsFirst: false }).limit(4),
   ]);
   const s = summarize(fin, start, today);
   const { data: owedAll } = await supabase.from("customer_balances").select("balance").gt("balance", 0);
   const totalOwed = (owedAll ?? []).reduce((a, r) => a + Number(r.balance), 0);
-  const inStock = Number(stock?.crates_in_stock ?? 0);
-  const low = inStock <= settings.low_stock_level;
+  const inStock = products.reduce((a, p) => a + p.on_hand, 0);
+  const lowSizes = products.filter((p) => p.on_hand <= p.low_stock_level);
+  const low = lowSizes.length > 0;
+  const stockValue = products.reduce((a, p) => a + p.stock_value, 0);
   const pendingCrates = (pending ?? []).reduce((a, r) => a + Number(r.crates), 0);
 
   const keyOf = (d: string) => (monthly ? d.slice(0, 7) : d);
@@ -76,8 +81,8 @@ export default async function Dashboard({ searchParams }: { searchParams: { peri
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link href="/sales/new" className="btn-primary">＋ Sale</Link>
+            <Link href="/purchases/new" className="btn-ghost">＋ Receive stock</Link>
             <Link href="/payments/new" className="btn-ghost">＋ Payment</Link>
-            <Link href="/stock" className="btn-ghost">＋ Stock</Link>
             <Link href="/orders/new" className="btn-ghost">＋ Order</Link>
           </div>
         </div>
@@ -88,13 +93,45 @@ export default async function Dashboard({ searchParams }: { searchParams: { peri
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Collected" value={naira(s.collected)} note={PERIODS[period]} />
         <Stat label="Owed to you" value={naira(totalOwed)} tone="amber" note={`${debtors?.length ?? 0}${(debtors?.length ?? 0) >= 6 ? "+" : ""} customers`} />
-        <Stat label="Crates in stock" value={count(inStock)} tone={low ? "red" : "ink"} note={low ? "Low — restock soon" : pendingCrates ? `${count(pendingCrates)} on pending orders` : "No pending orders"} />
+        <Stat label="Crates in stock" value={count(inStock)} tone={low ? "red" : "ink"} note={low ? `Low: ${lowSizes.map((p) => p.name).join(", ")}` : owner ? `Worth ${naira(stockValue)}` : pendingCrates ? `${count(pendingCrates)} on pending orders` : "All sizes OK"} />
         {owner ? (
           <Stat label="Profit" value={s.profit != null ? naira(s.profit) : "—"} tone={s.profit != null && s.profit < 0 ? "red" : "brand"}
-            note={s.profit != null ? `After eggs ${naira(s.eggCost)} & expenses ${naira(s.expenses)}` : "Add cost per crate in Stock to see profit"} />
+            note={s.profit != null ? `After eggs ${naira(s.eggCost)} & expenses ${naira(s.expenses)}` : "Enter cost per crate when receiving stock"} />
         ) : (
           <Stat label="Crates sold" value={count(s.crates)} note={PERIODS[period]} />
         )}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <div className="card">
+          <div className="mb-3 flex items-center justify-between"><span className="font-medium">Stock by size</span><Link href="/stock" className="text-sm text-brand-600">Stock ›</Link></div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {products.map((p) => {
+              const age = ageOf(p.oldest_batch, p.on_hand, settings.aging_days, settings.old_days);
+              const isLow = p.on_hand <= p.low_stock_level;
+              return (
+                <Link key={p.id} href={`/stock/${p.id}`} className={`rounded-2xl border p-3 transition hover:-translate-y-0.5 ${isLow ? "border-red-200 bg-red-50/60" : "border-ink-line bg-white"}`}>
+                  <div className="text-xs text-ink-muted">{p.name}</div>
+                  <div className={`font-serif text-3xl tabular-nums ${isLow ? "text-red-600" : ""}`}>{count(p.on_hand)}</div>
+                  <div className="mt-1 min-h-[22px]"><AgeBadge age={age} /></div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+        <div className="card">
+          <div className="mb-3 flex items-center justify-between"><span className="font-medium">Coming in</span><Link href="/purchases?show=expected" className="text-sm text-brand-600">All ›</Link></div>
+          {(incomingPu ?? []).length === 0 ? <p className="text-sm text-ink-muted">No deliveries expected. <Link href="/purchases/new" className="text-brand-600">Record an order ›</Link></p> : (
+            <div className="space-y-2">
+              {((incomingPu ?? []) as unknown as { id: string; expected_on: string | null; suppliers: { name: string } | null; purchase_items: { crates_ordered: number }[] }[]).map((pu) => (
+                <Link key={pu.id} href={`/purchases/${pu.id}`} className="flex justify-between text-sm">
+                  <span>{pu.suppliers?.name ?? "Supplier"}<span className="ml-1 text-xs text-ink-muted">{pu.expected_on ? shortDate(pu.expected_on) : ""}</span></span>
+                  <span className="tabular-nums">{count(pu.purchase_items.reduce((a, i) => a + i.crates_ordered, 0))} crates</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
@@ -126,7 +163,7 @@ export default async function Dashboard({ searchParams }: { searchParams: { peri
           <div className="table-wrap sm:mx-0"><table className="tbl"><tbody>
             {(recent ?? []).map((r) => (
               <tr key={r.id}>
-                <td><Link href={`/sales/${r.id}`} className="font-medium">{r.customer_name}</Link><div className="text-xs text-ink-muted">{shortDate(r.sale_date)} · {count(r.crates)} crates</div></td>
+                <td><Link href={`/sales/${r.id}`} className="font-medium">{r.customer_name}</Link><div className="text-xs text-ink-muted">{shortDate(r.sale_date)} · {count(r.crates)} {r.product_name}</div></td>
                 <td className="num">{naira(r.amount)}</td>
                 <td className="w-16">{Number(r.due) > 0 ? <span className="pill-warn">Owes</span> : <span className="pill-ok">Paid</span>}</td>
               </tr>

@@ -1,6 +1,6 @@
 # Flaky Egg Distributor
 
-A phone-friendly web app for running an egg distribution business. It covers sales (including part payments), customers and what they owe, payments, orders, stock, expenses, profit, and Excel downloads.
+A phone-friendly inventory and sales system for an egg distribution business. It tracks stock by egg size (in, out, spoilt, and how old each batch is), purchases from suppliers, sales with part payments, customers and what they owe, customer orders, expenses, profit and Excel downloads.
 
 Built with Next.js 14 and Supabase, and hosted on Vercel.
 
@@ -12,6 +12,7 @@ Built with Next.js 14 and Supabase, and hosted on Vercel.
 1. Go to [supabase.com](https://supabase.com) → **New project**. Name it `flaky-egg`, choose a strong database password, and pick the region closest to Nigeria (e.g. **West EU (London)**).
 2. When the project is ready, open **SQL Editor** → **New query**.
 3. Open [`supabase/schema.sql`](supabase/schema.sql) from this repo, copy **all** of it, paste it in, and click **Run**. You should see "Success".
+   *If you ran an older version of this file before, just run the new one too. It upgrades the database and keeps existing data.*
 
 ### 2. Create the owner's login
 1. In Supabase, go to **Authentication** → **Users** → **Add user** → **Create new user**.
@@ -34,25 +35,28 @@ Built with Next.js 14 and Supabase, and hosted on Vercel.
 2. Add it to the home screen:
    - **Android (Chrome):** ⋮ menu → **Add to Home screen**.
    - **iPhone (Safari):** Share → **Add to Home Screen**.
-3. Go to **More → Settings** and set the crate price, the low-stock warning level, and **opening stock** (crates in the store today).
-4. When eggs arrive, go to **Stock → Stock arrived** and enter the **cost per crate**. The app needs this to work out profit.
+3. Go to **More → Settings → Egg sizes and prices**. Rename or add sizes (Jumbo, Large, Medium and Small are there to start) and set each one's sell price and low-stock level.
+4. **Enter the stock she already has:** Stock → Other stock changes → **Old stock**. Do this for each size, with the date she bought it and what she paid per crate (an estimate is fine).
+5. **When new eggs arrive:** Stock → **Receive stock**. Pick the supplier, enter crates and cost for each size, and add transport if there was any. If she has ordered and is waiting, choose "Ordered, coming later" and mark it received when it arrives.
 
 From now on, every change pushed to the `main` branch on GitHub goes live automatically within a minute or two.
 
 ---
 
 ## How the numbers work
-- **A customer's balance** is everything they've bought minus everything they've paid.
-- **Payments clear the oldest unpaid sales first.** A sale shows "Paid" once the customer's payments cover it.
-- **Stock** = opening stock + crates arrived − crates sold − spoilt ± count corrections.
-- **Profit** = sales − (crates sold × average cost per crate) − expenses.
+- **Stock per size** = received + old stock − sold − spoilt ± count corrections.
+- **Egg age:** each delivery is a batch, and eggs are counted as sold oldest first. A size is marked **"Sell first"** once its oldest batch is 10 days old and **"Old"** at 14 days. Both can be changed in Settings.
+- **Stock value** = what she paid for the crates still in the store.
+- **Cost per crate** includes transport. For example, ₦10,000 transport on 100 crates adds ₦100 to each crate.
+- **A customer's balance** is everything they've bought minus everything they've paid. Payments clear their oldest unpaid sales first.
+- **Profit** = sales − egg cost − expenses. Egg cost = crates sold × the average cost of that size. Buying eggs is **not** entered as an expense, so it isn't counted twice.
 
 ## Who can do what
 | | Owner | Staff |
 |---|---|---|
-| Record sales, payments, orders, stock | ✅ | ✅ |
+| Record sales, payments, orders, receive stock, spoilt crates | ✅ | ✅ |
 | Edit or delete records | ✅ | — |
-| Expenses, profit, reports, downloads, settings | ✅ | — |
+| Costs, stock value, expenses, profit, reports, downloads, settings | ✅ | — |
 
 ### Adding staff later
 1. Supabase → **Authentication** → **Users** → **Add user** (tick Auto Confirm).

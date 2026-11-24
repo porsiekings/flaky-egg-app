@@ -15,7 +15,7 @@ export default async function SaleDetail({ params, searchParams }: { params: { i
   if (!s) notFound();
   return (
     <div className="mx-auto max-w-lg space-y-4">
-      <PageHeader title={naira(s.amount)} sub={`${count(s.crates)} crates × ${naira(s.unit_price)} · ${shortDate(s.sale_date)}`} />
+      <PageHeader title={naira(s.amount)} sub={`${count(s.crates)} ${s.product_name} crates × ${naira(s.unit_price)} · ${shortDate(s.sale_date)}`} />
       <Flash error={searchParams.error} />
       <div className="card space-y-2 text-sm">
         <Row k="Customer" v={<Link className="font-medium text-brand-600" href={`/customers/${s.customer_id}`}>{s.customer_name}</Link>} />

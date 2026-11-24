@@ -5,9 +5,9 @@ import { fetchAll } from "@/lib/finance";
 import { todayLagos } from "@/lib/format";
 
 const QUERIES: Record<string, { table: string; select: string; order: string; head: string[]; row: (r: Record<string, any>) => unknown[] }> = {
-  sales: { table: "sale_status", select: "sale_date, customer_name, crates, unit_price, amount, paid, due, notes", order: "sale_date",
-    head: ["Date", "Customer", "Crates", "Price per crate", "Amount", "Paid", "Still owed", "Note"],
-    row: (r) => [r.sale_date, r.customer_name, r.crates, r.unit_price, r.amount, r.paid, r.due, r.notes] },
+  sales: { table: "sale_status", select: "sale_date, customer_name, product_name, crates, unit_price, amount, paid, due, notes", order: "sale_date",
+    head: ["Date", "Customer", "Egg size", "Crates", "Price per crate", "Amount", "Paid", "Still owed", "Note"],
+    row: (r) => [r.sale_date, r.customer_name, r.product_name, r.crates, r.unit_price, r.amount, r.paid, r.due, r.notes] },
   payments: { table: "payments", select: "paid_on, amount, method, notes, customers(name)", order: "paid_on",
     head: ["Date", "Customer", "Amount", "Method", "Note"], row: (r) => [r.paid_on, r.customers?.name, r.amount, r.method, r.notes] },
   customers: { table: "customer_balances", select: "name, phone, crates_bought, total_bought, total_paid, balance, last_sale, last_payment", order: "name",
@@ -15,11 +15,15 @@ const QUERIES: Record<string, { table: string; select: string; order: string; he
     row: (r) => [r.name, r.phone, r.crates_bought, r.total_bought, r.total_paid, r.balance, r.last_sale, r.last_payment] },
   expenses: { table: "expenses", select: "spent_on, category, amount, notes", order: "spent_on",
     head: ["Date", "Category", "Amount", "Note"], row: (r) => [r.spent_on, r.category, r.amount, r.notes] },
-  stock: { table: "stock_movements", select: "moved_on, kind, crates, unit_cost, supplier, notes", order: "moved_on",
-    head: ["Date", "Type", "Crates", "Cost per crate", "Supplier", "Note"], row: (r) => [r.moved_on, r.kind, r.crates, r.unit_cost, r.supplier, r.notes] },
-  orders: { table: "orders", select: "created_at, status, crates, unit_price, due_date, notes, customers(name)", order: "created_at",
-    head: ["Added", "Customer", "Crates", "Price per crate", "Deliver by", "Status", "Note"],
-    row: (r) => [String(r.created_at).slice(0, 10), r.customers?.name, r.crates, r.unit_price, r.due_date, r.status, r.notes] },
+  stock: { table: "stock_movements", select: "moved_on, kind, crates, unit_cost, notes, products(name), suppliers(name)", order: "moved_on",
+    head: ["Date", "Egg size", "Type", "Crates", "Cost per crate", "Supplier", "Note"],
+    row: (r) => [r.moved_on, r.products?.name, { in: "Received", opening: "Old stock", spoilt: "Spoilt", adjust: "Count correction" }[r.kind as string] ?? r.kind, r.crates, r.unit_cost, r.suppliers?.name, r.notes] },
+  purchases: { table: "purchase_items", select: "crates_ordered, crates_received, unit_cost, products(name), purchases(ordered_on, received_on, status, transport_cost, suppliers(name))", order: "id",
+    head: ["Ordered", "Received", "Supplier", "Status", "Egg size", "Crates ordered", "Crates received", "Cost per crate", "Transport (whole delivery)"],
+    row: (r) => [r.purchases?.ordered_on, r.purchases?.received_on, r.purchases?.suppliers?.name, r.purchases?.status, r.products?.name, r.crates_ordered, r.crates_received, r.unit_cost, r.purchases?.transport_cost] },
+  orders: { table: "orders", select: "created_at, status, crates, unit_price, due_date, notes, customers(name), products(name)", order: "created_at",
+    head: ["Added", "Customer", "Egg size", "Crates", "Price per crate", "Deliver by", "Status", "Note"],
+    row: (r) => [String(r.created_at).slice(0, 10), r.customers?.name, r.products?.name, r.crates, r.unit_price, r.due_date, r.status, r.notes] },
 };
 
 const cell = (v: unknown) => {

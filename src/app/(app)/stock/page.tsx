@@ -1,59 +1,62 @@
+import Link from "next/link";
+import { AgeBadge } from "@/components/AgeBadge";
 import { Flash, PageHeader, Stat } from "@/components/ui";
 import { StockForm } from "@/components/StockForm";
-import { SubmitButton } from "@/components/SubmitButton";
 import { requireMember } from "@/lib/auth";
-import { count, naira, shortDate, todayLagos } from "@/lib/format";
-import { addStock, deleteMovement } from "./actions";
-
-type M = { id: string; moved_on: string; kind: string; crates: number; unit_cost: number | null; supplier: string | null; notes: string | null };
+import { count, naira, todayLagos } from "@/lib/format";
+import { ageOf, stockByProduct } from "@/lib/inventory";
+import { addStock } from "./actions";
 
 export default async function StockPage({ searchParams }: { searchParams: { error?: string; ok?: string } }) {
   const { supabase, settings, member } = await requireMember();
-  const monthStart = todayLagos().slice(0, 8) + "01";
-  const [{ data: lvl }, { data: moves }, { data: soldMonth }] = await Promise.all([
-    supabase.from("stock_level").select("crates_in_stock").maybeSingle(),
-    supabase.from("stock_movements").select("id, moved_on, kind, crates, unit_cost, supplier, notes").order("moved_on", { ascending: false }).order("created_at", { ascending: false }).limit(200),
-    supabase.from("sales").select("crates").gte("sale_date", monthStart),
-  ]);
-  const stock = Number(lvl?.crates_in_stock ?? 0);
-  const low = stock <= settings.low_stock_level;
-  const rows = (moves ?? []) as M[];
-  const inMonth = rows.filter((m) => m.kind === "in" && m.moved_on >= monthStart).reduce((s, m) => s + m.crates, 0);
-  const spoiltMonth = rows.filter((m) => m.kind === "spoilt" && m.moved_on >= monthStart).reduce((s, m) => s + m.crates, 0);
-  const sold = (soldMonth ?? []).reduce((s, r) => s + Number(r.crates), 0);
-  const label: Record<string, string> = { in: "Arrived", spoilt: "Spoilt", adjust: "Count correction" };
+  const products = await stockByProduct(supabase);
+  const total = products.reduce((s, p) => s + p.on_hand, 0);
+  const value = products.reduce((s, p) => s + p.stock_value, 0);
+  const incoming = products.reduce((s, p) => s + Number(p.incoming), 0);
+  const ages = products.map((p) => ({ p, age: ageOf(p.oldest_batch, p.on_hand, settings.aging_days, settings.old_days) }));
+  const oldOnes = ages.filter((a) => a.age.level === "old" || a.age.level === "aging");
+  const lowOnes = products.filter((p) => p.on_hand <= p.low_stock_level);
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Stock" sub={`Started with ${count(settings.opening_stock)} crates (change in Settings)`} />
+      <PageHeader title="Stock" sub="What's in the store, by egg size" action={<Link href="/purchases/new" className="btn-primary">＋ Receive stock</Link>} />
       <Flash error={searchParams.error} ok={searchParams.ok} />
-      {low && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">Stock is low: {count(stock)} crates left. Time to restock.</p>}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="In stock now" value={count(stock)} tone={low ? "red" : "brand"} note="crates" />
-        <Stat label="Arrived this month" value={count(inMonth)} tone="ink" />
-        <Stat label="Sold this month" value={count(sold)} tone="brand" />
-        <Stat label="Spoilt this month" value={count(spoiltMonth)} tone="amber" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Crates in store" value={count(total)} />
+        {member.role === "owner" ? <Stat label="Stock value" value={naira(value)} tone="ink" note="What she paid for what's left" /> : <Stat label="Sizes" value={products.length} tone="ink" />}
+        <Stat label="Coming in" value={count(incoming)} tone="ink" note={<Link href="/purchases" className="text-brand-600">Expected deliveries ›</Link>} />
+        <Stat label="Need attention" value={oldOnes.length + lowOnes.length} tone={oldOnes.length + lowOnes.length ? "amber" : "brand"} note={`${oldOnes.length} ageing · ${lowOnes.length} low`} />
       </div>
-      <div className="grid gap-4 lg:grid-cols-[1fr_1.3fr]">
-        <div className="card"><div className="mb-3 font-medium">Update stock</div><StockForm action={addStock} today={todayLagos()} /></div>
-        <div className="card p-0 sm:p-0">
-          <div className="px-4 pt-4 font-medium">History</div>
-          {rows.length === 0 ? <p className="p-4 text-sm text-ink-muted">No stock entries yet. Record your first delivery of crates.</p> : (
-            <div className="table-wrap sm:mx-0"><table className="tbl">
-              <thead><tr><th>Date</th><th>What</th><th className="num">Crates</th><th className="num">Cost</th>{member.role === "owner" && <th></th>}</tr></thead>
-              <tbody>{rows.map((m) => (
-                <tr key={m.id}>
-                  <td className="text-ink-muted">{shortDate(m.moved_on)}</td>
-                  <td>{label[m.kind]}{(m.supplier || m.notes) && <div className="text-xs text-ink-muted">{[m.supplier, m.notes].filter(Boolean).join(" · ")}</div>}</td>
-                  <td className={`num ${m.kind === "in" || (m.kind === "adjust" && m.crates > 0) ? "text-brand-600" : "text-amber-600"}`}>{m.kind === "spoilt" ? "−" : m.crates > 0 ? "+" : ""}{count(m.crates)}</td>
-                  <td className="num">{m.unit_cost != null ? naira(m.unit_cost * m.crates) : ""}</td>
-                  {member.role === "owner" && <td><form action={deleteMovement}><input type="hidden" name="id" value={m.id} /><SubmitButton className="text-xs text-red-600">Delete</SubmitButton></form></td>}
-                </tr>
-              ))}</tbody>
-            </table></div>
-          )}
-        </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {ages.map(({ p, age }) => {
+          const low = p.on_hand <= p.low_stock_level;
+          return (
+            <Link key={p.id} href={`/stock/${p.id}`} className="card block transition hover:-translate-y-0.5">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-ink-muted">{p.name}</div>
+                  <div className={`font-serif text-4xl tabular-nums ${low ? "text-red-600" : ""}`}>{count(p.on_hand)}</div>
+                  <div className="text-xs text-ink-muted">crates{low ? " · low, restock" : ""}</div>
+                </div>
+                <AgeBadge age={age} />
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2 border-t border-ink-line pt-3 text-xs">
+                <div><div className="text-ink-muted">Sells at</div><div className="tabular-nums">{naira(p.sell_price)}</div></div>
+                <div><div className="text-ink-muted">Avg cost</div><div className="tabular-nums">{p.avg_cost != null ? naira(p.avg_cost) : "—"}</div></div>
+                <div><div className="text-ink-muted">Incoming</div><div className="tabular-nums">{count(p.incoming)}</div></div>
+              </div>
+              {Number(p.on_order_to_customers) > 0 && <div className="mt-2 text-xs text-amber-600">{count(p.on_order_to_customers)} crates promised to customers</div>}
+            </Link>
+          );
+        })}
       </div>
+
+      <div className="card">
+        <div className="mb-3 font-medium">Other stock changes</div>
+        <StockForm action={addStock} today={todayLagos()} products={products} />
+      </div>
+      <p className="text-xs text-ink-muted">Eggs are counted as sold oldest first. A batch is marked &ldquo;sell first&rdquo; at {settings.aging_days} days and &ldquo;old&rdquo; at {settings.old_days} days (change in Settings). Tap a size to see its full in-and-out history.</p>
     </div>
   );
 }

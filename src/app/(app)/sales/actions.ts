@@ -10,7 +10,9 @@ export async function addSale(f: FormData) {
   const { supabase } = await requireMember();
   const crates = num(f, "crates"), price = num(f, "unit_price"), paidNow = num(f, "paid_now") || 0;
   const orderId = str(f, "order_id") || null;
+  const productId = str(f, "product_id");
   const from = orderId ? `/orders/${orderId}/deliver` : "/sales/new";
+  if (!productId) redirect(back(from, "Choose the egg size."));
   if (!(crates > 0) || !Number.isInteger(crates)) redirect(back(from, "Enter a whole number of crates."));
   if (!(price >= 0)) redirect(back(from, "Enter the price per crate."));
   if (paidNow < 0 || paidNow > crates * price) redirect(back(from, "The amount paid can't be more than the total."));
@@ -24,7 +26,7 @@ export async function addSale(f: FormData) {
   }
 
   const { data: sale, error } = await supabase.from("sales")
-    .insert({ customer_id: customerId, sale_date: saleDate, crates, unit_price: price, notes: str(f, "notes") || null, order_id: orderId })
+    .insert({ customer_id: customerId, product_id: productId, sale_date: saleDate, crates, unit_price: price, notes: str(f, "notes") || null, order_id: orderId })
     .select("id").single();
   if (error) redirect(back(from, "Couldn't save the sale: " + error.message));
 
@@ -38,7 +40,7 @@ export async function addSale(f: FormData) {
   if (orderId) await supabase.from("orders").update({ status: "delivered", sale_id: sale.id }).eq("id", orderId);
 
   revalidatePath("/", "layout");
-  redirect(back("/sales", "Sale saved.", "ok"));
+  redirect(back("/sales", "Sale saved.", "ok") + `&again=${encodeURIComponent(str(f, "customer"))}`);
 }
 
 export async function deleteSale(f: FormData) {

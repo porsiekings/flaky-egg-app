@@ -8,13 +8,15 @@ import { back, num, str } from "@/lib/forms";
 export async function addOrder(f: FormData) {
   const { supabase } = await requireMember();
   const crates = num(f, "crates"), price = num(f, "unit_price");
+  const productId = str(f, "product_id");
+  if (!productId) redirect(back("/orders/new", "Choose the egg size."));
   if (!(crates > 0) || !Number.isInteger(crates)) redirect(back("/orders/new", "Enter a whole number of crates."));
   if (!(price >= 0)) redirect(back("/orders/new", "Enter the price per crate."));
   let customerId: string;
   try { customerId = await customerIdFor(supabase, str(f, "customer")); }
   catch (e) { redirect(back("/orders/new", (e as Error).message)); }
   const { error } = await supabase.from("orders").insert({
-    customer_id: customerId, crates, unit_price: price, due_date: str(f, "due_date") || null, notes: str(f, "notes") || null,
+    customer_id: customerId, product_id: productId, crates, unit_price: price, due_date: str(f, "due_date") || null, notes: str(f, "notes") || null,
   });
   if (error) redirect(back("/orders/new", error.message));
   revalidatePath("/", "layout");

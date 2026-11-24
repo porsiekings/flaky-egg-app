@@ -3,26 +3,28 @@ import { AddButton, Empty, Flash, PageHeader } from "@/components/ui";
 import { SubmitButton } from "@/components/SubmitButton";
 import { requireMember } from "@/lib/auth";
 import { count, naira, shortDate, todayLagos } from "@/lib/format";
+import { stockByProduct } from "@/lib/inventory";
 import { cancelOrder, deleteOrder } from "./actions";
 
-type O = { id: string; crates: number; unit_price: number; due_date: string | null; status: string; notes: string | null; created_at: string; sale_id: string | null; customers: { name: string } | null };
+type O = { id: string; crates: number; unit_price: number; due_date: string | null; status: string; notes: string | null; created_at: string; sale_id: string | null; customers: { name: string } | null; products: { name: string } | null };
 
 export default async function OrdersPage({ searchParams }: { searchParams: { show?: string; error?: string; ok?: string } }) {
   const { supabase, member } = await requireMember();
   const show = searchParams.show === "done" ? "done" : "pending";
-  let q = supabase.from("orders").select("id, crates, unit_price, due_date, status, notes, created_at, sale_id, customers(name)");
+  let q = supabase.from("orders").select("id, crates, unit_price, due_date, status, notes, created_at, sale_id, customers(name), products(name)");
   q = show === "pending" ? q.eq("status", "pending").order("due_date", { ascending: true, nullsFirst: false }) : q.neq("status", "pending").order("created_at", { ascending: false }).limit(200);
-  const [{ data }, { data: stock }] = await Promise.all([q, supabase.from("stock_level").select("crates_in_stock").maybeSingle()]);
+  const [{ data }, products] = await Promise.all([q, stockByProduct(supabase)]);
   const rows = (data ?? []) as unknown as O[];
   const pendingCrates = show === "pending" ? rows.reduce((s, o) => s + o.crates, 0) : 0;
-  const inStock = Number(stock?.crates_in_stock ?? 0);
+  const inStock = products.reduce((s, p) => s + p.on_hand, 0);
+  const short = products.filter((p) => Number(p.on_order_to_customers) > p.on_hand);
   const today = todayLagos();
 
   return (
     <div>
       <PageHeader title="Orders" sub={show === "pending" ? `${count(pendingCrates)} crates waiting · ${count(inStock)} in stock` : "Delivered and cancelled"} action={<AddButton href="/orders/new">New order</AddButton>} />
       <Flash error={searchParams.error} ok={searchParams.ok} />
-      {show === "pending" && pendingCrates > inStock && <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-600">Pending orders need {count(pendingCrates - inStock)} more crates than you have in stock.</p>}
+      {show === "pending" && short.length > 0 && <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-600">Not enough stock for pending orders: {short.map((p) => `${p.name} needs ${count(Number(p.on_order_to_customers) - p.on_hand)} more`).join(", ")}.</p>}
       <div className="mb-4 inline-flex rounded-full bg-ink/5 p-1 text-sm">
         <Link href="/orders" className={`rounded-full px-3 py-1.5 ${show === "pending" ? "bg-white font-semibold shadow-sm" : "text-ink-muted"}`}>Pending</Link>
         <Link href="/orders?show=done" className={`rounded-full px-3 py-1.5 ${show === "done" ? "bg-white font-semibold shadow-sm" : "text-ink-muted"}`}>Done</Link>
@@ -36,7 +38,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: { sho
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-medium">{o.customers?.name}</div>
-                    <div className="text-sm text-ink-muted">{count(o.crates)} crates × {naira(o.unit_price)} = {naira(o.crates * o.unit_price)}</div>
+                    <div className="text-sm text-ink-muted">{count(o.crates)} {o.products?.name} crates × {naira(o.unit_price)} = {naira(o.crates * o.unit_price)}</div>
                     <div className={`mt-1 text-xs ${late ? "text-red-600" : "text-ink-muted"}`}>{o.due_date ? `${late ? "Was due" : "Due"} ${shortDate(o.due_date)}` : `Added ${shortDate(o.created_at.slice(0, 10))}`}</div>
                     {o.notes && <div className="mt-1 text-xs text-ink-muted">{o.notes}</div>}
                   </div>

@@ -4,7 +4,7 @@ import { requireMember } from "@/lib/auth";
 
 export default async function MorePage() {
   const { member } = await requireMember();
-  const items = NAV.filter((n) => !["/", "/sales", "/customers", "/orders"].includes(n.href) && (member.role === "owner" || !n.ownerOnly));
+  const items = NAV.filter((n) => !["/", "/stock", "/sales", "/customers"].includes(n.href) && (member.role === "owner" || !n.ownerOnly));
   return (
     <div className="space-y-4">
       <h1 className="h1">More</h1>

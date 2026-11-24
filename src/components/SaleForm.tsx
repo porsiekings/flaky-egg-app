@@ -6,22 +6,24 @@ import { naira } from "@/lib/format";
 type Props = {
   action: (f: FormData) => void;
   customers: { name: string; phone: string | null }[];
-  defaultPrice: number;
-  stock: number;
+  products: { id: string; name: string; on_hand: number; sell_price: number }[];
   today: string;
-  initial?: { customer?: string; crates?: number; price?: number; orderId?: string };
+  initial?: { customer?: string; crates?: number; price?: number; orderId?: string; productId?: string };
   submitLabel?: string;
 };
 
-export function SaleForm({ action, customers, defaultPrice, stock, today, initial, submitLabel = "Save sale" }: Props) {
+export function SaleForm({ action, customers, products, today, initial, submitLabel = "Save sale" }: Props) {
+  const [productId, setProductId] = useState(initial?.productId ?? (products.length === 1 ? products[0].id : ""));
+  const product = products.find((p) => p.id === productId);
   const [crates, setCrates] = useState(String(initial?.crates ?? ""));
-  const [price, setPrice] = useState(String(initial?.price ?? defaultPrice));
+  const [price, setPrice] = useState(String(initial?.price ?? product?.sell_price ?? ""));
+  const stock = product?.on_hand ?? 0;
   const [paid, setPaid] = useState("");
   const [payMode, setPayMode] = useState<"full" | "part" | "none">("full");
   const total = (Number(crates) || 0) * (Number(price) || 0);
   const paidNow = payMode === "full" ? total : payMode === "none" ? 0 : Number(paid) || 0;
   const owes = Math.max(0, total - paidNow);
-  const overStock = (Number(crates) || 0) > stock;
+  const overStock = !!product && (Number(crates) || 0) > stock;
 
   return (
     <form action={action} className="space-y-4">
@@ -30,6 +32,19 @@ export function SaleForm({ action, customers, defaultPrice, stock, today, initia
         <label className="label" htmlFor="customer">Customer</label>
         <input className="input" id="customer" name="customer" list="customer-list" defaultValue={initial?.customer} required autoComplete="off" placeholder="Type a name — new names are added automatically" />
         <datalist id="customer-list">{customers.map((c) => <option key={c.name} value={c.name} />)}</datalist>
+      </div>
+      <div>
+        <span className="label">Egg size</span>
+        <input type="hidden" name="product_id" value={productId} />
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {products.map((p) => (
+            <button type="button" key={p.id} onClick={() => { setProductId(p.id); if (!initial?.price) setPrice(String(p.sell_price)); }}
+              className={`rounded-xl border px-2 py-2 text-left text-sm transition ${productId === p.id ? "border-brand-500 bg-brand-50 ring-2 ring-brand-100" : "border-ink-line bg-white"}`}>
+              <div className="font-medium">{p.name}</div>
+              <div className={`text-xs ${p.on_hand <= 0 ? "text-red-600" : "text-ink-muted"}`}>{p.on_hand} in stock</div>
+            </button>
+          ))}
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -41,7 +56,7 @@ export function SaleForm({ action, customers, defaultPrice, stock, today, initia
           <input className="input" id="unit_price" name="unit_price" type="number" inputMode="numeric" min={0} step="any" required value={price} onChange={(e) => setPrice(e.target.value)} />
         </div>
       </div>
-      {overStock && <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-600">Only {stock} crates are in stock. You can still save it if the stock count is behind.</p>}
+      {overStock && <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-600">Only {stock} {product?.name} crates are in stock. You can still save it if the stock count is behind.</p>}
       <div>
         <label className="label" htmlFor="sale_date">Date</label>
         <input className="input" id="sale_date" name="sale_date" type="date" defaultValue={today} max={today} required />
@@ -83,6 +98,7 @@ export function SaleForm({ action, customers, defaultPrice, stock, today, initia
         <label className="label" htmlFor="notes">Note (optional)</label>
         <input className="input" id="notes" name="notes" />
       </div>
+      {!productId && <p className="text-sm text-ink-muted">Choose the egg size.</p>}
       <SubmitButton>{submitLabel}</SubmitButton>
     </form>
   );

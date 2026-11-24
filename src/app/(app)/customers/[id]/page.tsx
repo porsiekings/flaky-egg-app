@@ -15,7 +15,7 @@ export default async function CustomerPage({ params, searchParams }: { params: {
   const [{ data: c }, { data: cust }, { data: sales }, { data: pays }] = await Promise.all([
     supabase.from("customer_balances").select("*").eq("id", params.id).maybeSingle(),
     supabase.from("customers").select("name, phone, address, notes").eq("id", params.id).maybeSingle(),
-    supabase.from("sale_status").select("id, sale_date, crates, amount, due").eq("customer_id", params.id).order("sale_date", { ascending: false }),
+    supabase.from("sale_status").select("id, sale_date, product_name, crates, amount, due").eq("customer_id", params.id).order("sale_date", { ascending: false }),
     supabase.from("payments").select("id, paid_on, amount, method").eq("customer_id", params.id).order("paid_on", { ascending: false }),
   ]);
   if (!c || !cust) notFound();
@@ -61,9 +61,9 @@ export default async function CustomerPage({ params, searchParams }: { params: {
         <div className="card p-0 sm:p-0">
           <div className="px-4 pt-4 font-medium">Sales</div>
           <div className="table-wrap sm:mx-0"><table className="tbl">
-            <thead><tr><th>Date</th><th className="num">Crates</th><th className="num">Amount</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Size</th><th className="num">Crates</th><th className="num">Amount</th><th></th></tr></thead>
             <tbody>{(sales ?? []).map((s) => (
-              <tr key={s.id}><td><Link href={`/sales/${s.id}`}>{shortDate(s.sale_date)}</Link></td><td className="num">{count(s.crates)}</td><td className="num">{naira(s.amount)}</td><td><Paid due={Number(s.due)} /></td></tr>
+              <tr key={s.id}><td><Link href={`/sales/${s.id}`}>{shortDate(s.sale_date)}</Link></td><td>{s.product_name}</td><td className="num">{count(s.crates)}</td><td className="num">{naira(s.amount)}</td><td><Paid due={Number(s.due)} /></td></tr>
             ))}</tbody>
           </table></div>
           {!sales?.length && <p className="p-4 text-sm text-ink-muted">No sales yet.</p>}
