@@ -6,27 +6,48 @@ html, body { background: #f6f3ec; color: #1f1d1a; }
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   background:
-    radial-gradient(900px 500px at 0% -10%, rgba(47,158,110,.10), transparent 70%),
-    radial-gradient(900px 600px at 110% 110%, rgba(227,155,45,.09), transparent 70%),
-    #f6f3ec;
+    radial-gradient(700px 520px at -5% -8%, rgba(47,158,110,.20), transparent 70%),
+    radial-gradient(760px 620px at 110% 108%, rgba(227,155,45,.20), transparent 70%),
+    linear-gradient(180deg, #f7f3ea 0%, #efe9dc 100%);
   background-attachment: fixed;
   min-height: 100vh;
   -webkit-tap-highlight-color: transparent;
 }
 
 @layer components {
-  .card { @apply rounded-2xl border border-ink-line bg-paper-card p-4 shadow-card sm:p-5; }
+  .card {
+    @apply rounded-2xl p-4 sm:p-5;
+    background: linear-gradient(180deg, rgba(255,254,250,.96) 0%, rgba(250,246,237,.92) 100%);
+    border: 1px solid rgba(255,255,255,.7);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 1px 2px rgba(31,29,26,.05), 0 10px 20px -12px rgba(31,29,26,.18), 0 28px 48px -28px rgba(31,29,26,.38);
+  }
+  .tile {
+    @apply rounded-xl;
+    background: linear-gradient(180deg, #fff, #faf6ee);
+    border: 1px solid rgba(231,225,214,.9);
+    box-shadow: inset 0 1px 0 #fff, 0 6px 14px -8px rgba(31,29,26,.25);
+  }
+  .hero {
+    @apply relative overflow-hidden rounded-3xl p-5 text-white sm:p-7;
+    background:
+      radial-gradient(420px 300px at 0% 0%, rgba(84,214,152,.55), transparent 70%),
+      radial-gradient(460px 320px at 105% 110%, rgba(240,170,60,.55), transparent 70%),
+      linear-gradient(155deg, #0d3a28 0%, #14513a 55%, #1d6847 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 2px 6px rgba(13,58,40,.25), 0 30px 50px -22px rgba(13,58,40,.75);
+  }
+  .btn-glass { @apply btn border border-white/25 bg-white/10 text-white backdrop-blur hover:bg-white/20; }
+  .btn-light { @apply btn text-brand-700; background: linear-gradient(180deg, #fff 0%, #eaf6ef 100%); box-shadow: inset 0 1px 0 #fff, 0 10px 20px -8px rgba(0,0,0,.5); }
   .label { @apply mb-1 block text-xs font-medium text-ink-muted; }
-  .input { @apply w-full rounded-xl border border-ink-line bg-white px-3 py-2.5 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100; }
+  .input { @apply w-full rounded-xl border border-[#e2dbcd] bg-white px-3 py-2.5 text-base outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100; box-shadow: inset 0 2px 4px rgba(31,29,26,.06); }
   .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[.98] disabled:opacity-50; }
-  .btn-primary { @apply btn bg-brand-500 text-white shadow-sm hover:bg-brand-600; }
-  .btn-ghost { @apply btn border border-ink-line bg-white text-ink hover:bg-paper; }
+  .btn-primary { @apply btn text-white hover:brightness-105; background: linear-gradient(180deg, #36b07c 0%, #25825a 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 10px 22px -8px rgba(37,130,90,.65); }
+  .btn-ghost { @apply btn border border-ink-line bg-white text-ink hover:bg-paper; box-shadow: inset 0 1px 0 #fff, 0 6px 14px -8px rgba(31,29,26,.25); }
   .btn-danger { @apply btn border border-red-200 bg-white text-red-700 hover:bg-red-50; }
   .pill { @apply inline-block rounded-full px-2.5 py-0.5 text-xs font-medium; }
   .pill-ok { @apply pill bg-brand-100 text-brand-700; }
   .pill-warn { @apply pill bg-amber-100 text-amber-600; }
   .pill-muted { @apply pill bg-paper text-ink-muted; }
-  .h1 { @apply font-serif text-2xl sm:text-3xl; }
+  .h1 { @apply font-serif text-[28px] tracking-tight sm:text-3xl; text-shadow: 0 1px 0 #fff, 0 8px 20px rgba(31,29,26,.12); }
   .table-wrap { @apply -mx-4 overflow-x-auto sm:mx-0; }
   .tbl { @apply w-full text-sm; }
   .tbl th { @apply whitespace-nowrap border-b border-ink-line px-3 py-2 text-left text-xs font-medium text-ink-muted; }

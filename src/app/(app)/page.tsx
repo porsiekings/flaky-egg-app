@@ -69,21 +69,21 @@ export default async function Dashboard({ searchParams }: { searchParams: { peri
 
   return (
     <div className="space-y-5">
-      <section className="relative overflow-hidden rounded-3xl border border-ink-line bg-paper-card p-5 shadow-card sm:p-7">
-        <div className="pointer-events-none absolute -left-16 -top-20 h-56 w-56 rounded-full bg-brand-500/25 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -right-16 h-64 w-64 rounded-full bg-amber-500/25 blur-3xl" />
+      <section className="hero">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full border border-white/10" />
+        <div className="pointer-events-none absolute right-3 top-3 h-28 w-28 rounded-full border border-white/10" />
         <div className="relative">
-          <div className="text-[11px] uppercase tracking-[.14em] text-ink-muted">{greet} · {settings.business_name}</div>
-          <div className="mt-3 text-sm text-ink-muted">Sales · {PERIODS[period].toLowerCase()}</div>
-          <div className="font-serif text-4xl tabular-nums sm:text-6xl">{naira(s.revenue)}</div>
-          <p className="mt-2 max-w-xl text-sm text-ink-muted">
-            <b className="text-ink">{count(s.crates)} crates</b> sold and <b className="text-ink">{naira(s.collected)}</b> collected. Customers owe you <b className="text-amber-600">{naira(totalOwed)}</b> in total.
+          <div className="text-[11px] uppercase tracking-[.14em] text-white/70">{greet} · {settings.business_name}</div>
+          <div className="mt-3 text-sm text-white/75">Sales · {PERIODS[period].toLowerCase()}</div>
+          <div className="font-serif text-[44px] leading-tight tabular-nums tracking-tight [text-shadow:0_10px_30px_rgba(0,0,0,.35)] sm:text-6xl">{naira(s.revenue)}</div>
+          <p className="mt-2 max-w-xl text-sm text-white/80">
+            <b className="text-white">{count(s.crates)} crates</b> sold and <b className="text-white">{naira(s.collected)}</b> collected. Customers owe you <b className="text-[#ffc76b]">{naira(totalOwed)}</b> in total.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/sales/new" className="btn-primary">＋ Sale</Link>
-            <Link href="/purchases/new" className="btn-ghost">＋ Receive stock</Link>
-            <Link href="/payments/new" className="btn-ghost">＋ Payment</Link>
-            <Link href="/orders/new" className="btn-ghost">＋ Order</Link>
+            <Link href="/sales/new" className="btn-light">＋ Sale</Link>
+            <Link href="/purchases/new" className="btn-glass">＋ Receive stock</Link>
+            <Link href="/payments/new" className="btn-glass">＋ Payment</Link>
+            <Link href="/orders/new" className="btn-glass">＋ Order</Link>
           </div>
         </div>
       </section>
@@ -110,7 +110,7 @@ export default async function Dashboard({ searchParams }: { searchParams: { peri
               const age = ageOf(p.oldest_batch, p.on_hand, settings.aging_days, settings.old_days);
               const isLow = p.on_hand <= p.low_stock_level;
               return (
-                <Link key={p.id} href={`/stock/${p.id}`} className={`rounded-2xl border p-3 transition hover:-translate-y-0.5 ${isLow ? "border-red-200 bg-red-50/60" : "border-ink-line bg-white"}`}>
+                <Link key={p.id} href={`/stock/${p.id}`} className={`tile p-3 transition hover:-translate-y-0.5 ${isLow ? "!border-red-200 !bg-red-50" : ""}`}>
                   <div className="text-xs text-ink-muted">{p.name}</div>
                   <div className={`font-serif text-3xl tabular-nums ${isLow ? "text-red-600" : ""}`}>{count(p.on_hand)}</div>
                   <div className="mt-1 min-h-[22px]"><AgeBadge age={age} /></div>

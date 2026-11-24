@@ -33,7 +33,7 @@ const isActive = (path: string, href: string) => (href === "/" ? path === "/" : 
 export function SideNav({ isOwner, business }: { isOwner: boolean; business: string }) {
   const path = usePathname();
   return (
-    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-ink-line bg-paper-card/70 p-4 backdrop-blur md:flex">
+    <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-white/70 bg-paper-card/60 p-4 shadow-[8px_0_30px_-20px_rgba(31,29,26,.35)] backdrop-blur-xl md:flex">
       <div className="mb-6 px-2">
         <div className="text-[11px] uppercase tracking-[.14em] text-ink-muted">Egg distribution</div>
         <div className="font-serif text-lg leading-tight">{business}</div>
@@ -41,7 +41,7 @@ export function SideNav({ isOwner, business }: { isOwner: boolean; business: str
       <nav className="flex flex-col gap-1">
         {NAV.filter((n) => isOwner || !n.ownerOnly).map((n) => (
           <Link key={n.href} href={n.href}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${isActive(path, n.href) ? "bg-brand-500 text-white shadow-sm" : "text-ink-muted hover:bg-paper hover:text-ink"}`}>
+            className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${isActive(path, n.href) ? "bg-gradient-to-b from-[#36b07c] to-brand-600 text-white shadow-[0_8px_18px_-8px_rgba(37,130,90,.7)]" : "text-ink-muted hover:bg-paper hover:text-ink"}`}>
             <Icon d={n.icon} />{n.label}
           </Link>
         ))}
@@ -58,7 +58,7 @@ export function BottomNav() {
   const items = NAV.filter((n) => MOBILE.includes(n.href));
   const moreActive = !MOBILE.some((h) => isActive(path, h));
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-ink-line bg-paper-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+    <nav className="fixed inset-x-3 bottom-[max(12px,env(safe-area-inset-bottom))] z-30 rounded-[22px] border border-white/80 bg-paper-card/80 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_18px_40px_-14px_rgba(31,29,26,.45)] backdrop-blur-xl md:hidden">
       <div className="grid grid-cols-5">
         {items.map((n) => (
           <Link key={n.href} href={n.href} className={`flex flex-col items-center gap-0.5 py-2 text-[11px] ${isActive(path, n.href) ? "text-brand-600" : "text-ink-muted"}`}>

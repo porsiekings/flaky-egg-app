@@ -39,7 +39,7 @@ export function SaleForm({ action, customers, products, today, initial, submitLa
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {products.map((p) => (
             <button type="button" key={p.id} onClick={() => { setProductId(p.id); if (!initial?.price) setPrice(String(p.sell_price)); }}
-              className={`rounded-xl border px-2 py-2 text-left text-sm transition ${productId === p.id ? "border-brand-500 bg-brand-50 ring-2 ring-brand-100" : "border-ink-line bg-white"}`}>
+              className={`rounded-xl border px-2 py-2 text-left text-sm transition ${productId === p.id ? "border-brand-500 bg-brand-50 ring-2 ring-brand-100 shadow-[0_8px_18px_-10px_rgba(37,130,90,.6)]" : "border-ink-line bg-white shadow-[inset_0_1px_0_#fff,0_6px_14px_-8px_rgba(31,29,26,.25)]"}`}>
               <div className="font-medium">{p.name}</div>
               <div className={`text-xs ${p.on_hand <= 0 ? "text-red-600" : "text-ink-muted"}`}>{p.on_hand} in stock</div>
             </button>
@@ -70,7 +70,7 @@ export function SaleForm({ action, customers, products, today, initial, submitLa
         <div className="mt-3 grid grid-cols-3 gap-1 rounded-xl bg-white p-1 text-sm">
           {(["full", "part", "none"] as const).map((m) => (
             <button type="button" key={m} onClick={() => setPayMode(m)}
-              className={`rounded-lg py-2 ${payMode === m ? "bg-brand-500 font-semibold text-white" : "text-ink-muted"}`}>
+              className={`rounded-lg py-2 ${payMode === m ? "bg-gradient-to-b from-[#36b07c] to-brand-600 font-semibold text-white shadow-[0_6px_14px_-6px_rgba(37,130,90,.7)]" : "text-ink-muted"}`}>
               {m === "full" ? "Paid all" : m === "part" ? "Paid some" : "Not paid"}
             </button>
           ))}

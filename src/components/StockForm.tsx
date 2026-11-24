@@ -12,7 +12,7 @@ export function StockForm({ action, today, products, productId, from }: { action
       {from && <input type="hidden" name="from" value={from} />}
       <div className="grid grid-cols-3 gap-1 rounded-xl bg-paper p-1 text-sm">
         {([["spoilt", "Cracked / spoilt"], ["count", "Correct count"], ["opening", "Old stock"]] as const).map(([k, l]) => (
-          <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-lg py-2 ${kind === k ? "bg-brand-500 font-semibold text-white" : "text-ink-muted"}`}>{l}</button>
+          <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-lg py-2 ${kind === k ? "bg-gradient-to-b from-[#36b07c] to-brand-600 font-semibold text-white shadow-[0_6px_14px_-6px_rgba(37,130,90,.7)]" : "text-ink-muted"}`}>{l}</button>
         ))}
       </div>
       {productId ? <input type="hidden" name="product_id" value={productId} /> : (

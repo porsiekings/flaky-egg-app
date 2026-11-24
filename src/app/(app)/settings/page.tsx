@@ -7,7 +7,7 @@ type P = { id: string; name: string; sell_price: number; low_stock_level: number
 
 function ProductRow({ p }: { p?: P }) {
   return (
-    <form action={saveProduct} className="rounded-2xl border border-ink-line bg-white p-3">
+    <form action={saveProduct} className="tile rounded-2xl p-3">
       {p && <input type="hidden" name="id" value={p.id} />}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1.3fr_1fr_1fr_.6fr]">
         <div><label className="label">Size name</label><input className="input" name="name" defaultValue={p?.name} placeholder="e.g. Jumbo" required /></div>

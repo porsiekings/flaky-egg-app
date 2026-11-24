@@ -21,8 +21,8 @@ export function PurchaseForm({ action, products, suppliers, today }: {
     <form action={action} className="space-y-4">
       <input type="hidden" name="arrived" value={arrived ? "yes" : "no"} />
       <div className="grid grid-cols-2 gap-1 rounded-xl bg-paper p-1 text-sm">
-        <button type="button" onClick={() => setArrived(true)} className={`rounded-lg py-2 ${arrived ? "bg-brand-500 font-semibold text-white" : "text-ink-muted"}`}>It has arrived</button>
-        <button type="button" onClick={() => setArrived(false)} className={`rounded-lg py-2 ${!arrived ? "bg-brand-500 font-semibold text-white" : "text-ink-muted"}`}>Ordered, coming later</button>
+        <button type="button" onClick={() => setArrived(true)} className={`rounded-lg py-2 ${arrived ? "bg-gradient-to-b from-[#36b07c] to-brand-600 font-semibold text-white shadow-[0_6px_14px_-6px_rgba(37,130,90,.7)]" : "text-ink-muted"}`}>It has arrived</button>
+        <button type="button" onClick={() => setArrived(false)} className={`rounded-lg py-2 ${!arrived ? "bg-gradient-to-b from-[#36b07c] to-brand-600 font-semibold text-white shadow-[0_6px_14px_-6px_rgba(37,130,90,.7)]" : "text-ink-muted"}`}>Ordered, coming later</button>
       </div>
       <div>
         <label className="label" htmlFor="supplier">Supplier / farm</label>
@@ -37,7 +37,7 @@ export function PurchaseForm({ action, products, suppliers, today }: {
       <div className="space-y-3">
         <div className="text-sm font-medium">Eggs</div>
         {lines.map((l) => (
-          <div key={l.key} className="rounded-2xl border border-ink-line bg-white p-3">
+          <div key={l.key} className="tile rounded-2xl p-3">
             <div className="grid grid-cols-[1.2fr_1fr_1fr] gap-2">
               <div>
                 <label className="label">Size</label>
